@@ -258,3 +258,28 @@ AgentFence now includes an OpenTelemetry tracing layer for the security lifecycl
 The observability layer deliberately records authorization evidence rather than raw untrusted content. In particular, repository text, prompts, secrets, and patch bodies are not emitted as telemetry attributes by default.
 
 See [`OTEL.md`](./OTEL.md) for configuration and [`AGENTFENCE_2_PLAN.md`](./AGENTFENCE_2_PLAN.md) for the post-submission roadmap.
+
+## Trace-backed security receipts
+
+The observability branch extends the security receipt with an OpenTelemetry Trace ID.
+
+A remediation lifecycle is represented by a root `agentfence.remediation` span. WebMCP tool calls, human approval, mutation, and verification are correlated beneath that trace. When verification completes, the receipt records the same Trace ID:
+
+```text
+agentfence.remediation
+        │
+        ├── WebMCP tool calls
+        ├── dataflow evidence
+        ├── policy evaluation
+        ├── human approval
+        ├── apply_fix
+        └── run_verification
+                 │
+                 ▼
+        Security Receipt
+        └── Trace ID
+```
+
+This turns the receipt into a correlation handle for the complete authorization lifecycle rather than a standalone summary. The UI displays the receipt ID, decision, verification result, commit, test result, and OpenTelemetry Trace ID.
+
+Telemetry deliberately records security metadata rather than raw repository or prompt content. AgentFence-specific attributes use the `agentfence.*` namespace as an application-level convention; they are not presented as official OpenTelemetry semantic conventions.

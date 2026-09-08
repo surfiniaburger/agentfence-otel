@@ -3,7 +3,7 @@
 import { useAgentFence } from "./AgentFenceProvider";
 
 export default function SecurityPanel() {
-  const { pendingApproval, approvePending, denyPending, repo, patch, provenance, diffAnalysis, dataflowAnalysis } = useAgentFence();
+  const { pendingApproval, approvePending, denyPending, repo, patch, provenance, diffAnalysis, dataflowAnalysis, receipt } = useAgentFence();
 
   return (
     <section className="rounded-2xl border border-slate-700 bg-slate-950/70 p-4">
@@ -91,6 +91,25 @@ export default function SecurityPanel() {
             <span className="text-slate-400">Fixture:</span> {dataflowAnalysis.fixture?.id} · <span className="text-slate-400">Evaluator:</span> graph_dataflow.py
           </div>
           <p className="mt-2 text-[10px] leading-4 text-slate-500">{dataflowAnalysis.summary}</p>
+        </div>
+      )}
+
+      {receipt && (
+        <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold uppercase tracking-[0.15em] text-emerald-200">Trace-backed security receipt</span>
+            <span className={`text-[10px] font-bold ${receipt.decision === "APPROVED" && receipt.verification === "PASS" ? "text-emerald-300" : "text-amber-300"}`}>{receipt.verification}</span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-400">The receipt is correlated with the OpenTelemetry remediation trace, so the authorization decision and verification outcome can be reconstructed from one execution trace.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-slate-950 p-3 text-[10px]">
+            <div><span className="text-slate-500">Receipt:</span> <span className="font-mono text-slate-300">{receipt.id}</span></div>
+            <div><span className="text-slate-500">Decision:</span> <span className={receipt.decision === "APPROVED" ? "text-emerald-300" : "text-red-300"}>{receipt.decision}</span></div>
+            <div className="col-span-2"><span className="text-slate-500">Trace ID:</span> <span className="break-all font-mono text-sky-200">{receipt.traceId || "NOT_AVAILABLE"}</span></div>
+            <div><span className="text-slate-500">Finding:</span> {receipt.findingId}</div>
+            <div><span className="text-slate-500">Patch:</span> {receipt.patchId || "—"}</div>
+            <div><span className="text-slate-500">Commit:</span> <span className="font-mono">{receipt.commit}</span></div>
+            <div><span className="text-slate-500">Tests:</span> {receipt.tests?.passed ?? 0} passed / {receipt.tests?.failed ?? 0} failed</div>
+          </div>
         </div>
       )}
 

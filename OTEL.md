@@ -49,3 +49,14 @@ For a production deployment, configure CORS and collector authentication separat
 Browser instrumentation in OpenTelemetry JavaScript is still considered experimental. AgentFence therefore uses manual instrumentation for its security-critical spans rather than relying on automatic browser instrumentation.
 
 The project currently uses `@opentelemetry/api` 1.9.1 and `@opentelemetry/sdk-trace-web` 2.11.0.
+
+
+## Trace-backed security receipts
+
+AgentFence maintains one root `agentfence.remediation` span for a remediation lifecycle. Tool spans, human approval, mutation, and verification are children of that root. The resulting OpenTelemetry `TraceId` is stored in the security receipt, creating a correlation from the user-visible receipt back to the complete execution trace.
+
+A normal successful lifecycle therefore becomes:
+
+`agentfence.remediation` → tool spans → `agentfence.human_approval` → `apply_fix` → `run_verification`
+
+The receipt records the trace ID rather than embedding raw repository content, prompts, secrets, or patch bodies. This keeps the receipt useful for audit correlation without turning telemetry into a copy of sensitive application data.

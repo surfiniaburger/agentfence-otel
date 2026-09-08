@@ -71,3 +71,15 @@ OpenTelemetry trace
 - [ ] Durable approval records
 - [ ] Policy versioning
 - [ ] Agent identity and environment-aware authorization
+
+
+### v0.3 — Trace-backed receipts
+
+- [x] Create a root remediation trace spanning the agent lifecycle.
+- [x] Correlate WebMCP tool spans under the remediation trace.
+- [x] Correlate human approval with the same trace.
+- [x] Store the OpenTelemetry Trace ID in the security receipt.
+- [x] Surface the Trace ID in the AgentFence UI.
+- [x] Keep raw repository/prompt content out of telemetry attributes.
+- [ ] Add a backend receipt store for durable audit records.
+- [ ] Add a trace viewer/deep-link integration for an OTEL backend.

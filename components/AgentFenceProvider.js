@@ -6,7 +6,7 @@ import { evaluateTool } from "../lib/policy";
 import { initialProvenance, markUntrusted, propagateTaint, TRUST } from "../lib/provenance";
 import { analyzePatch } from "../lib/diffAnalysis";
 import { analyzeWithSilverOne } from "../lib/silverOneDataflow";
-import { finishSpan, initTelemetry, startSpan } from "../lib/telemetry";
+import { finishSpan, getSpanTraceId, initTelemetry, startSpan } from "../lib/telemetry";
 
 const AgentFenceContext = createContext(null);
 
@@ -31,6 +31,7 @@ export function AgentFenceProvider({ children }) {
   diffAnalysisRef.current = diffAnalysis;
   const [webmcpStatus, setWebmcpStatus] = useState("checking");
   const registrationRef = useRef(null);
+  const remediationTraceRef = useRef(null);
   const provenanceRef = useRef(initialProvenance());
   provenanceRef.current = provenance;
 
@@ -44,6 +45,17 @@ export function AgentFenceProvider({ children }) {
   const executeTool = useCallback(async (name, input = {}, options = {}) => {
     const currentProvenance = provenanceRef.current;
     const policy = evaluateTool(name, currentProvenance);
+
+    // A remediation trace is the audit boundary for a complete agent run.
+    // It survives the pending-approval pause so the eventual human decision,
+    // mutation, and verification can all be correlated by one Trace ID.
+    if (!remediationTraceRef.current && name === "get_repository") {
+      remediationTraceRef.current = startSpan("agentfence.remediation", {
+        "agentfence.trace.type": "security_remediation",
+        "agentfence.repository": repoRef.current.name,
+      });
+    }
+    const parentSpan = options.parentSpan || remediationTraceRef.current;
     const span = startSpan(`agentfence.tool.${name}`, {
       "agentfence.tool.name": name,
       "agentfence.tool.risk": policy.risk,
@@ -52,7 +64,7 @@ export function AgentFenceProvider({ children }) {
       "agentfence.provenance.trust": currentProvenance.trust,
       "agentfence.provenance.tainted": currentProvenance.trust === TRUST.TAINTED,
       "agentfence.approval.required": name === "apply_fix",
-    });
+    }, parentSpan);
     const finish = (result, attributes = {}) => {
       finishSpan(span, result?.ok === false ? 2 : 1, {
         "agentfence.result.ok": Boolean(result?.ok),
@@ -218,8 +230,10 @@ export function AgentFenceProvider({ children }) {
       case "run_verification": {
         const currentRepo = repoRef.current;
         const passed = currentRepo.status === "fixed";
+        const traceId = getSpanTraceId(remediationTraceRef.current);
         const nextReceipt = {
           id: `AF-${Date.now().toString(36).toUpperCase()}`,
+          traceId,
           findingId: finding.id,
           patchId: currentRepo.status === "fixed" ? patch.id : null,
           decision: "APPROVED",
@@ -230,11 +244,23 @@ export function AgentFenceProvider({ children }) {
         };
         setReceipt(nextReceipt);
         log(name, passed ? "passed" : "failed", passed ? "Verification passed." : "Repository still fails verification.");
-        return finish({ ok: true, ...nextReceipt }, {
+        const result = finish({ ok: true, ...nextReceipt }, {
           "agentfence.verification.status": nextReceipt.verification,
           "agentfence.verification.tests_passed": nextReceipt.tests.passed,
           "agentfence.verification.tests_failed": nextReceipt.tests.failed,
+          "agentfence.receipt.trace_id": traceId || "",
         });
+        if (remediationTraceRef.current) {
+          finishSpan(remediationTraceRef.current, passed ? 1 : 2, {
+            "agentfence.receipt.id": nextReceipt.id,
+            "agentfence.receipt.decision": nextReceipt.decision,
+            "agentfence.receipt.verification": nextReceipt.verification,
+            "agentfence.verification.tests_passed": nextReceipt.tests.passed,
+            "agentfence.verification.tests_failed": nextReceipt.tests.failed,
+          });
+          remediationTraceRef.current = null;
+        }
+        return result;
       }
 
       default:
@@ -249,7 +275,7 @@ export function AgentFenceProvider({ children }) {
       "agentfence.patch.id": pendingApproval.patchId,
       "agentfence.finding.id": pendingApproval.findingId,
       "agentfence.provenance.trust": pendingApproval.provenance?.trust || "UNKNOWN",
-    });
+    }, remediationTraceRef.current);
     log("HUMAN_APPROVAL", "approved", `Approved ${pendingApproval.patchId}.`);
     await executeTool(
       "apply_fix",
@@ -266,10 +292,12 @@ export function AgentFenceProvider({ children }) {
       "agentfence.patch.id": pendingApproval.patchId,
       "agentfence.finding.id": pendingApproval.findingId,
       "agentfence.provenance.trust": pendingApproval.provenance?.trust || "UNKNOWN",
-    });
+    }, remediationTraceRef.current);
     log("HUMAN_APPROVAL", "denied", `Denied ${pendingApproval.patchId}. Repository unchanged.`);
+    const traceId = getSpanTraceId(remediationTraceRef.current);
     setReceipt({
       id: `AF-${Date.now().toString(36).toUpperCase()}`,
+      traceId,
       findingId: pendingApproval.findingId,
       patchId: pendingApproval.patchId,
       decision: "DENIED",
@@ -280,9 +308,20 @@ export function AgentFenceProvider({ children }) {
     });
     setPendingApproval(null);
     finishSpan(span, 1, { "agentfence.approval.result": "MUTATION_BLOCKED" });
+    if (remediationTraceRef.current) {
+      finishSpan(remediationTraceRef.current, 1, {
+        "agentfence.receipt.decision": "DENIED",
+        "agentfence.receipt.verification": "NOT_RUN",
+      });
+      remediationTraceRef.current = null;
+    }
   }, [pendingApproval, log]);
 
   const simulatePromptInjection = useCallback(async () => {
+    if (remediationTraceRef.current) {
+      finishSpan(remediationTraceRef.current, 1, { "agentfence.trace.outcome": "RESET" });
+      remediationTraceRef.current = null;
+    }
     setTimeline([]);
     setReceipt(null);
     setPendingApproval(null);
@@ -312,6 +351,10 @@ export function AgentFenceProvider({ children }) {
   }, [executeTool, log]);
 
   const runAgentDemo = useCallback(async () => {
+    if (remediationTraceRef.current) {
+      finishSpan(remediationTraceRef.current, 1, { "agentfence.trace.outcome": "RESET" });
+      remediationTraceRef.current = null;
+    }
     setTimeline([]);
     setReceipt(null);
     setPendingApproval(null);
