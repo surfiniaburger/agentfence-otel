@@ -1,0 +1,25 @@
+{
+  "name": "agentfence-observability",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/sdk-trace-web": "2.11.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "tailwindcss": "latest"
+  },
+  "type": "module",
+  "description": "Observable authorization boundary for WebMCP agents."
+}
