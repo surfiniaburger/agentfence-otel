@@ -218,7 +218,7 @@ export function AgentFenceProvider({ children }) {
     return result;
   }, [log]);
 
-  const toolHandlers = useMemo(() => ({
+  const toolHandlers = useMemo(() => Object.assign(Object.create(null), {
     get_repository: (finish) => handleGetRepository(finish),
     get_commit_diff: (finish) => handleGetCommitDiff(finish),
     scan_repository: (finish) => handleScanRepository(finish),
@@ -289,7 +289,7 @@ export function AgentFenceProvider({ children }) {
       });
     }
 
-    const handler = toolHandlers[name];
+    const handler = Object.hasOwn(toolHandlers, name) ? toolHandlers[name] : null;
     if (!handler) {
       return finish({ ok: false, error: "Unknown tool." });
     }
