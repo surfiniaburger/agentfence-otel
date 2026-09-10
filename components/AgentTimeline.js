@@ -2,6 +2,21 @@
 
 import { useAgentFence } from "./AgentFenceProvider";
 
+function getStatusColor(status) {
+  switch (status) {
+    case "approved":
+    case "executed":
+    case "allowed":
+    case "passed":
+      return "text-emerald-300";
+    case "waiting":
+    case "approval_required":
+      return "text-amber-300";
+    default:
+      return "text-red-300";
+  }
+}
+
 export default function AgentTimeline() {
   const { timeline, runAgentDemo, simulatePromptInjection, receipt } = useAgentFence();
 
@@ -37,13 +52,7 @@ export default function AgentTimeline() {
           <div key={event.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
             <div className="flex items-center justify-between gap-3">
               <span className="font-mono text-xs text-slate-300">{event.tool}</span>
-              <span className={`text-[10px] font-bold uppercase ${
-                event.status === "approved" || event.status === "executed" || event.status === "allowed" || event.status === "passed"
-                  ? "text-emerald-300"
-                  : event.status === "waiting" || event.status === "approval_required"
-                    ? "text-amber-300"
-                    : "text-red-300"
-              }`}>
+              <span className={`text-[10px] font-bold uppercase ${getStatusColor(event.status)}`}>
                 {event.status}
               </span>
             </div>

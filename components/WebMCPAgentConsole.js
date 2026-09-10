@@ -9,6 +9,22 @@ function parseResult(value) {
   try { return JSON.parse(value); } catch { return value; }
 }
 
+function getStatusDotClass(status) {
+  if (status === "ready") return "bg-emerald-400";
+  if (status === "checking") return "bg-amber-400";
+  return "bg-red-400";
+}
+
+function getStepClass(activeStep, key) {
+  if (activeStep === key) {
+    return "border-violet-400/60 bg-violet-400/15 text-violet-100";
+  }
+  if (activeStep === "approval" && key === "dataflow") {
+    return "border-emerald-400/30 bg-emerald-400/5 text-emerald-300";
+  }
+  return "border-slate-800 bg-slate-900/70 text-slate-500";
+}
+
 export default function WebMCPAgentConsole() {
   const { pendingApproval, repo } = useAgentFence();
   const [nativeTools, setNativeTools] = useState([]);
@@ -160,7 +176,7 @@ export default function WebMCPAgentConsole() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${status === "ready" ? "bg-emerald-400" : status === "checking" ? "bg-amber-400" : "bg-red-400"}`} />
+            <span className={`h-2.5 w-2.5 rounded-full ${getStatusDotClass(status)}`} />
             <p className="text-xs uppercase tracking-[0.2em] text-violet-300">WebMCP agent layer</p>
             <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-400">
               {status === "ready" ? `${nativeTools.length} DISCOVERED` : status.toUpperCase()}
@@ -200,7 +216,7 @@ export default function WebMCPAgentConsole() {
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {[["repository","get_repository"],["scan","scan_repository"],["dataflow","analyze_dataflow"],["inspect","inspect_finding"],["propose","propose_fix"],["simulate","simulate_fix"],["approval","apply_fix"]].map(([key, label], index, items) => (
             <div key={key} className="flex items-center gap-1.5">
-              <span className={`rounded-lg border px-2 py-1.5 font-mono text-[10px] ${activeStep === key ? "border-violet-400/60 bg-violet-400/15 text-violet-100" : activeStep === "approval" && key === "dataflow" ? "border-emerald-400/30 bg-emerald-400/5 text-emerald-300" : "border-slate-800 bg-slate-900/70 text-slate-500"}`}>
+              <span className={`rounded-lg border px-2 py-1.5 font-mono text-[10px] ${getStepClass(activeStep, key)}`}>
                 {label}
               </span>
               {index < items.length - 1 && <span className="text-slate-700">→</span>}
