@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test"
+    "test": "node --test",
+    "test:adk": "node --test tests/adkProvenance.test.mjs"
   },
   "dependencies": {
     "next": "latest",
@@ -15,7 +16,8 @@
     "react-dom": "latest",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/sdk-trace-web": "2.11.0",
-    "@opentelemetry/exporter-trace-otlp-http": "0.222.0"
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
+    "@google/adk": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
