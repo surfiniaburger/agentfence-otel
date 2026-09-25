@@ -78,7 +78,7 @@ export default function WebMCPAgentConsole() {
     if (!tool) throw new Error(`WebMCP tool not found: ${name}`);
 
     const startedAt = performance.now();
-    const rawResult = await modelContext.executeTool(tool, JSON.stringify(input));
+    const rawResult = await modelContext.executeTool(tool, input);
     const result = parseResult(rawResult);
     const call = {
       name,
