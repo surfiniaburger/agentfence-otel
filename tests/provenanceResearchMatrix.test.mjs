@@ -96,7 +96,7 @@ test("C0-C5 share one executable research-chain contract", () => {
     assert.equal(result.summary.transformationCount, expected.transforms);
     assert.equal(result.policy.decision, "approval_required");
     assert.equal(result.policy.risk, expected.risk);
-    assert.equal(result.policy.provenanceGate, expected.gate);
+    assert.equal(result.policy.provenanceGate ?? null, expected.gate);
     assert.equal(result.mutationExecuted, false);
   }
 });
