@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --test",
-    "test:adk": "node --test tests/adkProvenance.test.mjs"
+    "test:adk": "node --test tests/adkProvenance.test.mjs",
+    "experiment:adk-provenance": "node experiments/adk-provenance-robustness.mjs"
   },
   "dependencies": {
     "next": "latest",
