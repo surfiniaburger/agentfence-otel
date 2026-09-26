@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "node --test",
     "test:adk": "node --test tests/adkProvenance.test.mjs",
-    "experiment:adk-provenance": "node experiments/adk-provenance-robustness.mjs"
+    "experiment:adk-provenance": "node experiments/adk-provenance-robustness.mjs",
+    "experiment:adk-provenance-v2": "node experiments/adk-provenance-robustness-v2.mjs"
   },
   "dependencies": {
     "next": "latest",
