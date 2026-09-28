@@ -83,3 +83,27 @@ test("telemetry summary contains metadata but no raw content", () => {
   assert.equal(Object.hasOwn(summary, "content"), false);
   assert.equal(Object.hasOwn(summary, "prompt"), false);
 });
+
+test("deriveProvenance rejects duplicate artifact IDs", () => {
+  const source = markUntrusted(
+    initialProvenance(),
+    "src/notes.txt",
+    "Repository content is untrusted data."
+  );
+
+  const derived = deriveProvenance(source, "scan_repository", {
+    artifactId: "custom-id-1",
+  });
+
+  assert.throws(
+    () => {
+      deriveProvenance(derived, "inspect_finding", {
+        artifactId: "custom-id-1",
+      });
+    },
+    {
+      name: "Error",
+      message: "Duplicate provenance artifact id: custom-id-1",
+    }
+  );
+});

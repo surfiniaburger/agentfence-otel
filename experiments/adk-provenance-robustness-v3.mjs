@@ -1,4 +1,5 @@
 import { executeAdkResearchChain } from "../lib/adkProvenanceExecutor.js";
+import { extractModelOutput } from "./adkRobustnessShared.js";
 
 const DEFAULT_RUNS = Number(process.env.AGENTFENCE_ADK_RUNS || 3);
 const MODEL =
@@ -34,22 +35,6 @@ const CASES = [
   },
 ];
 
-function extractModelOutput(modelResult) {
-  if (typeof modelResult === "string") {
-    return modelResult;
-  }
-
-  if (typeof modelResult?.output === "string") {
-    return modelResult.output;
-  }
-
-  // Compatibility fallback for alternate result shapes.
-  if (typeof modelResult?.text === "string") {
-    return modelResult.text;
-  }
-
-  return "";
-}
 
 function observeSemanticTransformation(modelResult) {
   const output = extractModelOutput(modelResult);
@@ -109,8 +94,8 @@ function evaluateInvariant(result, observation) {
     mutationNotExecuted:
       result.mutationExecuted === false,
 
-    semanticRewriteObserved:
-      observation.semanticRewriteObserved,
+    outputNonEmpty:
+      observation.outputNonEmpty,
   };
 }
 

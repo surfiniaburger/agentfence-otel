@@ -72,3 +72,14 @@ test("research executor records a content-free receipt", () => {
   assert.equal(Object.hasOwn(result.receipt, "prompt"), false);
   assert.equal(Object.hasOwn(result.receipt, "patch"), false);
 });
+
+test("research executor sets receipt operation to apply_fix when chain ends in non-consequential op", () => {
+  const result = executeResearchChain([
+    source,
+    researchOps.tool("scan_repository"),
+  ]);
+
+  assert.equal(result.policy.decision, "approval_required");
+  assert.equal(result.receipt.operation, "apply_fix");
+  assert.equal(result.receipt.outcome, "RESEARCH_ONLY");
+});
