@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { initialRepo, finding, patch, applyPatch } from "../lib/demoRepo";
 import { evaluateTool } from "../lib/policy";
-import { initialProvenance, markUntrusted, propagateTaint, TRUST } from "../lib/provenance";
+import { initialProvenance, markUntrusted, propagateTaint, provenanceSummary, TRUST } from "../lib/provenance";
 import { analyzePatch } from "../lib/diffAnalysis";
 import { analyzeWithSilverOne } from "../lib/silverOneDataflow";
 import { finishSpan, getSpanTraceId, initTelemetry, startSpan } from "../lib/telemetry";
@@ -243,6 +243,7 @@ export function AgentFenceProvider({ children }) {
   const executeTool = useCallback(async (name, input = {}, options = {}) => {
     const currentProvenance = provenanceRef.current;
     const policy = evaluateTool(name, currentProvenance);
+    const lineageSummary = provenanceSummary(currentProvenance);
 
     if (!remediationTraceRef.current && name === "get_repository") {
       remediationTraceRef.current = startSpan("agentfence.remediation", {
@@ -259,6 +260,11 @@ export function AgentFenceProvider({ children }) {
       "agentfence.provenance.trust": currentProvenance.trust,
       "agentfence.provenance.tainted": currentProvenance.trust === TRUST.TAINTED,
       "agentfence.approval.required": name === "apply_fix",
+      "agentfence.provenance.chain_id": lineageSummary.chainId,
+      "agentfence.provenance.root_source_count": lineageSummary.rootSourceCount,
+      "agentfence.provenance.hop_count": lineageSummary.hopCount,
+      "agentfence.provenance.transformation_count": lineageSummary.transformationCount,
+      "agentfence.provenance.inherited": lineageSummary.inherited,
     }, parentSpan);
 
     const finish = (result, attributes = {}) => {
