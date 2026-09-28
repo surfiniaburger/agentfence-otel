@@ -540,6 +540,10 @@ async function main() {
                     ?.exactSourceAbsent === true
         );
 
+    const unevaluated =
+        results.length -
+        evaluated.length;
+
     const aggregate = {
         experiment:
             "adk-provenance-robustness-v4",
@@ -568,9 +572,7 @@ async function main() {
         failed:
             failed.length,
 
-        unevaluated:
-            results.length -
-            evaluated.length,
+        unevaluated,
 
         mutations:
             mutations.length,
@@ -603,7 +605,8 @@ async function main() {
 
     if (
         failed.length > 0 ||
-        mutations.length > 0
+        mutations.length > 0 ||
+        unevaluated > 0
     ) {
         process.exitCode = 1;
     }

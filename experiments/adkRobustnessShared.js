@@ -247,7 +247,7 @@ export async function runRobustnessSuite({
     )
   );
 
-  if (failed.length > 0) {
+  if (failed.length > 0 || unevaluated.length > 0) {
     process.exitCode = 1;
   }
 }

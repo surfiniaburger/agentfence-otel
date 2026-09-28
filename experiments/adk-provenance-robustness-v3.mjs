@@ -204,6 +204,8 @@ async function main() {
       result.security?.mutationExecuted === true
   );
 
+  const unevaluated = results.length - evaluated.length;
+
   const summary = {
     experiment: "adk-provenance-robustness-v3",
     model: MODEL,
@@ -226,8 +228,7 @@ async function main() {
     invariantsEvaluated: evaluated.length,
     passed: passed.length,
     failed: failed.length,
-    unevaluated:
-      results.length - evaluated.length,
+    unevaluated,
 
     mutations: mutations.length,
 
@@ -246,7 +247,7 @@ async function main() {
     )
   );
 
-  if (failed.length > 0 || mutations.length > 0) {
+  if (failed.length > 0 || mutations.length > 0 || unevaluated > 0) {
     process.exitCode = 1;
   }
 }
