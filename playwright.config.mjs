@@ -11,6 +11,10 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3000",
     ...devices["Desktop Chrome"],
+    // WebMCP consequentialHint is implemented in current branded Chrome;
+    // bundled Playwright Chromium can expose WebMCP without the latest
+    // annotation surface. Keep the E2E browser target explicit.
+    channel: process.env.WEBMCP_BROWSER_CHANNEL || "chrome",
     headless: false,
     trace: "retain-on-failure",
     launchOptions: {
