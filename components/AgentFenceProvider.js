@@ -504,25 +504,65 @@ export function AgentFenceProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
+    registrationRef.current = controller;
+
+    const wait = (milliseconds) => new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
+
+    async function registerToolWithRetry(definition) {
+      const tool = {
+        ...definition,
+        execute: async (input) => executeTool(definition.name, input),
+      };
+
+      // React StrictMode intentionally mounts, cleans up, and mounts again in
+      // development. WebMCP unregisters through AbortSignal, and native
+      // unregister processing can race the second registerTool() call. Retry
+      // duplicate-name failures so the second mount can reclaim the tool set
+      // after the first mount's abort has taken effect.
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        if (cancelled || controller.signal.aborted) return false;
+
+        try {
+          await document.modelContext.registerTool(tool, {
+            signal: controller.signal,
+          });
+          return true;
+        } catch (error) {
+          if (cancelled || controller.signal.aborted || error?.name === "AbortError") {
+            return false;
+          }
+
+          const message = String(error?.message || error);
+          const duplicate =
+            error?.name === "InvalidStateError" ||
+            /duplicate.*tool|already.*registered|already.*exists/i.test(message);
+
+          if (!duplicate || attempt === 7) throw error;
+
+          await wait(0);
+        }
+      }
+
+      return false;
+    }
 
     async function register() {
       if (!document.modelContext?.registerTool) {
-        setWebmcpStatus("unavailable");
+        if (!cancelled) setWebmcpStatus("unavailable");
         return;
       }
 
+      setWebmcpStatus("registering");
+
       try {
         for (const definition of toolDefinitions) {
-          if (cancelled || controller.signal.aborted) return;
-
-          await document.modelContext.registerTool({
-            ...definition,
-            execute: async (input) => executeTool(definition.name, input),
-          }, { signal: controller.signal });
+          const registered = await registerToolWithRetry(definition);
+          if (!registered) return;
         }
 
-        if (!cancelled) {
-          registrationRef.current = controller;
+        if (!cancelled && !controller.signal.aborted) {
           setWebmcpStatus("registered");
         }
       } catch (error) {
@@ -538,7 +578,9 @@ export function AgentFenceProvider({ children }) {
     return () => {
       cancelled = true;
       controller.abort();
-      registrationRef.current = null;
+      if (registrationRef.current === controller) {
+        registrationRef.current = null;
+      }
     };
   }, [toolDefinitions, executeTool]);
 
