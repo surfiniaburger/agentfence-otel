@@ -17,8 +17,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Install Chromium and system dependencies
-        run: npx playwright install --with-deps chromium
+      - name: Install Google Chrome and system dependencies
+        run: npx playwright install --with-deps chrome
       - name: Run native WebMCP E2E under Xvfb
         run: xvfb-run --auto-servernum npm run test:e2e:webmcp
         env:
