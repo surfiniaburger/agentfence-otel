@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "node --test",
     "test:adk": "node --test tests/adkProvenance.test.mjs",
+    "test:e2e:webmcp": "playwright test tests/webmcp-otel.e2e.spec.mjs",
     "experiment:adk-provenance": "node experiments/adk-provenance-robustness.mjs",
     "experiment:adk-provenance-v2": "node experiments/adk-provenance-robustness-v2.mjs",
     "experiment:adk-provenance-v3": "node experiments/adk-provenance-robustness-v3.mjs",
@@ -26,7 +27,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
-    "tailwindcss": "latest"
+    "tailwindcss": "latest",
+    "@playwright/test": "1.63.0"
   },
   "type": "module",
   "description": "Observable authorization boundary for WebMCP agents."

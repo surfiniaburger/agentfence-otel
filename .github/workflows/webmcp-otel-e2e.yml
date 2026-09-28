@@ -1,0 +1,25 @@
+name: WebMCP OTEL E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/webmcp-otel-e2e
+
+jobs:
+  webmcp-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run native WebMCP E2E under Xvfb
+        run: xvfb-run --auto-servernum npm run test:e2e:webmcp
+        env:
+          CI: true
