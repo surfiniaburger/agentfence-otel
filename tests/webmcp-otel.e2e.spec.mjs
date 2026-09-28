@@ -26,8 +26,21 @@ async function callWebMcpTool(page, name, input = {}) {
 test("WebMCP -> AgentFence -> provenance -> policy -> OTEL E2E", async ({ page }) => {
   await page.goto("/");
 
+  const expectedToolNames = [
+    "get_repository", "scan_repository", "analyze_dataflow", "inspect_finding",
+    "propose_fix", "simulate_fix", "apply_fix", "run_verification",
+  ];
+
   await expect.poll(async () => page.evaluate(() => Boolean(document.modelContext?.getTools)))
     .toBe(true);
+
+  // Tool registration is asynchronous and the provider registers the tools
+  // individually. Wait for the complete capability surface rather than
+  // sampling after the first registerTool() promise resolves.
+  await expect.poll(async () => page.evaluate(async () => {
+    const tools = await document.modelContext.getTools();
+    return tools.map((tool) => tool.name);
+  })).toEqual(expect.arrayContaining(expectedToolNames));
 
   const discovered = await page.evaluate(async () =>
     (await document.modelContext.getTools()).map((tool) => ({
@@ -36,10 +49,7 @@ test("WebMCP -> AgentFence -> provenance -> policy -> OTEL E2E", async ({ page }
     }))
   );
   const names = discovered.map((tool) => tool.name);
-  expect(names).toEqual(expect.arrayContaining([
-    "get_repository", "scan_repository", "analyze_dataflow", "inspect_finding",
-    "propose_fix", "simulate_fix", "apply_fix", "run_verification",
-  ]));
+  expect(names).toEqual(expect.arrayContaining(expectedToolNames));
 
   const writeTool = discovered.find((tool) => tool.name === "apply_fix");
   expect(writeTool?.annotations?.readOnlyHint).toBe(false);
